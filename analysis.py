@@ -197,7 +197,8 @@ def load_args(argv=None) -> argparse.Namespace:
     if pre.config:
         with open(pre.config, "r", encoding="utf-8") as fh:
             raw = json.load(fh)
-        unknown = set(raw) - set(_CONFIG_KEYS)
+        unknown = {k for k in raw if k not in _CONFIG_KEYS
+                   and not k.startswith("_")}   # 下划线开头的键是注释，静默忽略
         if unknown:
             print(f"[警告] 配置文件中的未知键被忽略: {sorted(unknown)}",
                   file=sys.stderr)
@@ -335,6 +336,7 @@ class VideoSource:
 
     def __init__(self, path: str, fps_override: float | None):
         self.path = path
+        self._fps_override = fps_override
         self.cap = cv2.VideoCapture(path)
         if not self.cap.isOpened():
             raise SystemExit(f"[错误] 无法打开视频: {path}")
@@ -368,7 +370,17 @@ class VideoSource:
         return frame
 
     def rewind(self):
-        self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        """
+        回到开头。
+
+        注意：部分容器（如 Pylon 导出的 MJPEG AVI）一旦顺序读到结尾，
+        `set(POS_FRAMES, 0)` 会静默失效（报告位置为 0 但 read 直接失败）。
+        直接重新打开文件最可靠，开销仅数毫秒。
+        """
+        self.cap.release()
+        self.cap = cv2.VideoCapture(self.path)
+        if not self.cap.isOpened():
+            raise SystemExit(f"[错误] 重新打开视频失败: {self.path}")
 
     def release(self):
         self.cap.release()
