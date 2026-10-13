@@ -20,15 +20,15 @@ SPI = (社交区停留时间 − 非社交区停留时间) / (社交区停留时
 真实数据录好后，按以下步骤跑：
 
 ```bash
-# 1) 先核对 ROI：导出背景图与首帧叠加图
-python analysis.py --video data/你的文件.avi --preview-dir prev/
+# 1) 交互式标定 ROI（鼠标拖框，可翻帧挑选清晰画面）
+python roi_tool.py --video data/你的文件.avi --out roi_config.json
 
-# 2) 打开 prev/*_roi.png，量出社交区/非社交区的像素坐标，
-#    填进 roi_template.json（刺激鱼在右侧 → 社交区在右）
-
-# 3) 正式分析
-python analysis.py --video data/你的文件.avi --config roi_template.json --out results/
+# 2) 正式分析，直接复用上一步的配置
+python analysis.py --video data/你的文件.avi --config roi_config.json --out results/
 ```
+
+`roi_tool.py` 见下文「交互式 ROI 标定」。若想先用静态图核对，也可
+`analysis.py --video ... --preview-dir prev/` 导出 `prev/*_roi.png` 目测。
 
 **这套数据的关键特点**（已实测确认，roi_template.json 里已按此设好默认值）：
 
@@ -36,8 +36,8 @@ python analysis.py --video data/你的文件.avi --config roi_template.json --ou
   → `--min-area 15`、`--mad-k 5`（不能用通用默认的 30 / 6）
 - **刺激鱼静止**，会被时间中位数背景自动吸收，无需手工排除
 - 视频 2048×1088 @ ~94.5 fps 约 2 GB；图像序列每张 TIFF 约 2.2 MB
-- 用 `--preview-dir` 核对 ROI 是**必做步骤**——鱼缸每次摆放位置都不同，
-  `roi_template.json` 里的坐标只是占位示例
+- 鱼缸每次摆放位置都不同，**ROI 必须每次重标**，`roi_template.json`
+  里的坐标只是占位示例
 
 > 注意：Pylon 导出的 MJPEG AVI 在顺序读到结尾后 `seek(0)` 会静默失效，
 > 程序已在 `rewind` 处做了重开文件处理，无需你关心。
@@ -72,6 +72,49 @@ python analysis.py --video-dir ./data --config roi.json --out results/
 
 不知道 ROI 坐标时，加 `--preview-dir prev/` 会导出背景图和首帧 ROI 叠加图，
 量出像素坐标再回填即可。
+
+## 交互式 ROI 标定
+
+`roi_tool.py` 用鼠标在画面上直接框选社交区 / 非社交区，避免手写像素坐标。
+坐标基于**原始图像像素**（左上为原点），与 `--social`/`--nonsocial`、`--crop`
+及预处理完全一致，可直接复用。
+
+```bash
+# 视频
+python roi_tool.py --video rec/trial1.avi --out roi_config.json
+
+# 图像序列
+python roi_tool.py --video ./seq_dir --fps 30 --out roi_config.json
+
+# 载入已有配置再微调（其它键原样保留，只更新 ROI）
+python roi_tool.py --video rec/trial1.avi --config roi_config.json --out roi_config.json
+```
+
+操作：
+
+| 操作 | 作用 |
+| --- | --- |
+| 鼠标左键拖拽 | 在当前模式下画矩形 |
+| `1` / `2` | 切换编辑区域：`1`=社交区(绿)、`2`=非社交区(红) |
+| 滑块 或 `a` / `d` | 前后翻帧，挑一张鱼和装置都清晰的来标 |
+| `u` | 清除当前区域 |
+| `r` | 清除全部 |
+| `s` | 保存到 `--out` |
+| `q` / `ESC` | 退出（有未保存修改会提示一次） |
+
+输出是一个 JSON，例如：
+
+```json
+{
+  "social": [40, 60, 300, 540],
+  "nonsocial": [1620, 60, 1880, 540],
+  "_image_size": [2048, 1088]
+}
+```
+
+直接 `analysis.py --config roi_config.json` 使用。若 `--config` 指向已有配置，
+工具会**原样保留**其它键（如 `min_area`、`thresh_method`），只改写 ROI 两个键。
+无显示环境想自检时可用 `--dry-run`：只读首帧、打印尺寸帧数，不开窗口。
 
 ## 预处理（内存中执行，不落中间文件）
 

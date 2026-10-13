@@ -1,0 +1,20 @@
+# 编译产物
+x64/
+Debug/
+Release/
+.vs/
+*.exe
+*.ilk
+*.pdb
+*.obj
+*.recipe
+*.tlog
+*.lastbuildstate
+
+# 录像与中间输出
+_test/
+*.avi
+
+# 运行时生成的本地配置（含本机调好的参数，不入库）
+camera_config.txt
+camera_params.pfs

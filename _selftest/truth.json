@@ -1,0 +1,9 @@
+{
+  "fps": 30.0,
+  "n_frames": 1200,
+  "time_social_s": 17.367,
+  "time_nonsocial_s": 19.933,
+  "spi_truth": -0.0688,
+  "video": "D:\\User\\Bingrui_Wu\\projects\\behavioralAnalysis\\_selftest\\synthetic.mp4",
+  "seq_dir": "D:\\User\\Bingrui_Wu\\projects\\behavioralAnalysis\\_selftest\\seq"
+}
