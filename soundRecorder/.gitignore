@@ -1,0 +1,9 @@
+# 运行时输出（录音与旁车元数据）
+rec/
+*.wav
+
+# 运行时生成的本地配置（含本机设备名等，不入库）
+audio_config.txt
+app_config.txt
+
+__pycache__/
