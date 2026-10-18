@@ -1,2 +1,5 @@
 /data
 /cameraRecorder/rec
+/soundRecorder/rec
+/soundRecorder/audio_config.txt
+/soundRecorder/app_config.txt
